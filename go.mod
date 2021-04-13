@@ -1,8 +1,8 @@
 module github.com/projectdiscovery/fileutil
 
-go 1.16
+go 1.14
 
 require (
 	github.com/karrick/godirwalk v1.16.1
-	github.com/projectdiscovery/chaos-middleware v0.0.0-20210410204428-08cd26894ff3
+	github.com/projectdiscovery/executil v0.0.0-20210413185435-fdede2eda279
 )

@@ -3,7 +3,7 @@ package fileutil
 import (
 	"fmt"
 
-	"github.com/projectdiscovery/chaos-middleware/exec"
+	"github.com/projectdiscovery/executil"
 )
 
 const (
@@ -44,7 +44,7 @@ func CreateVirtualDisk(vlayout *VirtualDiskLayout) (string, error) {
 func Truncate(path, size string) (string, error) {
 	// Create empty file-disk
 	truncateCmd := fmt.Sprintf("truncate -s %sG %s", size, path)
-	output, err := exec.Run(truncateCmd)
+	output, err := executil.Run(truncateCmd)
 	if err != nil {
 		return string(output), err
 	}
@@ -54,7 +54,7 @@ func Truncate(path, size string) (string, error) {
 func Mkfs(path, fs string) (string, error) {
 	// Format it to Btrfs
 	formatCmd := fmt.Sprintf("mkfs -t %s %s", fs, path)
-	output, err := exec.Run(formatCmd)
+	output, err := executil.Run(formatCmd)
 	if err != nil {
 		return string(output), err
 	}
@@ -69,7 +69,7 @@ func Mount(file, toFolder string) (string, error) {
 
 	// Create empty file-disk
 	truncateCmd := fmt.Sprintf("mount %s %s", file, toFolder)
-	output, err := exec.Run(truncateCmd)
+	output, err := executil.Run(truncateCmd)
 	if err != nil {
 		return string(output), err
 	}

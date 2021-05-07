@@ -1,6 +1,7 @@
 package fileutil
 
 import (
+	"bufio"
 	"io"
 	"net/http"
 	"os"
@@ -106,4 +107,36 @@ func HasStdin() bool {
 	isPipedFromFIFO := (mode & os.ModeNamedPipe) != 0
 
 	return isPipedFromChrDev || isPipedFromFIFO
+}
+
+func ReadFile(filename string) (chan string, error) {
+	out := make(chan string)
+	defer close(out)
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		out <- scanner.Text()
+	}
+	return out, nil
+}
+
+func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, error) {
+	out := make(chan string)
+	defer close(out)
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	buf := make([]byte, maxCapacity)
+	scanner.Buffer(buf, maxCapacity)
+	for scanner.Scan() {
+		out <- scanner.Text()
+	}
+	return out, nil
 }

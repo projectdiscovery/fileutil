@@ -1,4 +1,2 @@
 github.com/karrick/godirwalk v1.16.1 h1:DynhcF+bztK8gooS0+NDJFrdNZjJ3gzVzC545UNA9iw=
 github.com/karrick/godirwalk v1.16.1/go.mod h1:j4mkqPuvaLI8mp1DroR3P6ad7cyYd4c1qeJ3RV7ULlk=
-github.com/projectdiscovery/executil v0.0.0-20210414225944-2ad029b6a1fd h1:kPBRsSG8ZwNHLOBzDM/vfGi/Oaj/dzdbTeEkv+6UhEw=
-github.com/projectdiscovery/executil v0.0.0-20210414225944-2ad029b6a1fd/go.mod h1:C8Cevz76yJLH0RpmIa+wWTVnZQyIL6CyhTnJJl6hHas=

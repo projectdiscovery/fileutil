@@ -2,6 +2,8 @@ package fileutil
 
 import (
 	"bufio"
+	"crypto/tls"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -66,7 +68,11 @@ func DeleteFilesOlderThan(folder string, maxAge time.Duration, callback func(str
 
 // DownloadFile to specified path
 func DownloadFile(filepath string, url string) error {
-	resp, err := http.Get(url)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(url)
 	if err != nil {
 		return err
 	}
@@ -80,7 +86,7 @@ func DownloadFile(filepath string, url string) error {
 	return err
 }
 
-func CreateFolders(paths []string) error {
+func CreateFolders(paths ...string) error {
 	for _, path := range paths {
 		if err := CreateFolder(path); err != nil {
 			return err
@@ -110,33 +116,45 @@ func HasStdin() bool {
 }
 
 func ReadFile(filename string) (chan string, error) {
+	if !FileExists(filename) {
+		return nil, errors.New("file doesn't exist")
+	}
 	out := make(chan string)
 	defer close(out)
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		out <- scanner.Text()
-	}
+	go func() {
+		f, err := os.Open(filename)
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			out <- scanner.Text()
+		}
+	}()
+
 	return out, nil
 }
 
 func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, error) {
+	if !FileExists(filename) {
+		return nil, errors.New("file doesn't exist")
+	}
 	out := make(chan string)
 	defer close(out)
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	buf := make([]byte, maxCapacity)
-	scanner.Buffer(buf, maxCapacity)
-	for scanner.Scan() {
-		out <- scanner.Text()
-	}
+	go func() {
+		f, err := os.Open(filename)
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		buf := make([]byte, maxCapacity)
+		scanner.Buffer(buf, maxCapacity)
+		for scanner.Scan() {
+			out <- scanner.Text()
+		}
+	}()
+
 	return out, nil
 }

@@ -120,8 +120,8 @@ func ReadFile(filename string) (chan string, error) {
 		return nil, errors.New("file doesn't exist")
 	}
 	out := make(chan string)
-	defer close(out)
 	go func() {
+		defer close(out)
 		f, err := os.Open(filename)
 		if err != nil {
 			return
@@ -141,8 +141,8 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 		return nil, errors.New("file doesn't exist")
 	}
 	out := make(chan string)
-	defer close(out)
 	go func() {
+		defer close(out)
 		f, err := os.Open(filename)
 		if err != nil {
 			return

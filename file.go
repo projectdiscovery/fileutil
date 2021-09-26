@@ -186,3 +186,16 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 
 	return out, nil
 }
+
+func GetTempFileName() (string, error) {
+	tmpfile, err := os.CreateTemp("", "")
+	if err != nil {
+		return "", err
+	}
+	tmpFileName := tmpfile.Name()
+	if err := tmpfile.Close(); err != nil {
+		return tmpFileName, err
+	}
+	err = os.RemoveAll(tmpFileName)
+	return tmpFileName, err
+}

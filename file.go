@@ -115,6 +115,34 @@ func HasStdin() bool {
 	return isPipedFromChrDev || isPipedFromFIFO
 }
 
+func ReadFileWithReader(r io.Reader) (chan string, error) {
+	out := make(chan string)
+	go func() {
+		defer close(out)
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			out <- scanner.Text()
+		}
+	}()
+
+	return out, nil
+}
+
+func ReadFileWithReaderAndBufferSize(r io.Reader, maxCapacity int) (chan string, error) {
+	out := make(chan string)
+	go func() {
+		defer close(out)
+		scanner := bufio.NewScanner(r)
+		buf := make([]byte, maxCapacity)
+		scanner.Buffer(buf, maxCapacity)
+		for scanner.Scan() {
+			out <- scanner.Text()
+		}
+	}()
+
+	return out, nil
+}
+
 func ReadFile(filename string) (chan string, error) {
 	if !FileExists(filename) {
 		return nil, errors.New("file doesn't exist")

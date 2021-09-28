@@ -86,6 +86,7 @@ func DownloadFile(filepath string, url string) error {
 	return err
 }
 
+// CreateFolders in the list
 func CreateFolders(paths ...string) error {
 	for _, path := range paths {
 		if err := CreateFolder(path); err != nil {
@@ -96,6 +97,7 @@ func CreateFolders(paths ...string) error {
 	return nil
 }
 
+// CreateFolder path
 func CreateFolder(path string) error {
 	return os.MkdirAll(path, 0700)
 }
@@ -115,6 +117,7 @@ func HasStdin() bool {
 	return isPipedFromChrDev || isPipedFromFIFO
 }
 
+// ReadFileWithReader and stream on a channel
 func ReadFileWithReader(r io.Reader) (chan string, error) {
 	out := make(chan string)
 	go func() {
@@ -128,6 +131,7 @@ func ReadFileWithReader(r io.Reader) (chan string, error) {
 	return out, nil
 }
 
+// ReadFileWithReader with specific buffer size and stream on a channel
 func ReadFileWithReaderAndBufferSize(r io.Reader, maxCapacity int) (chan string, error) {
 	out := make(chan string)
 	go func() {
@@ -143,6 +147,7 @@ func ReadFileWithReaderAndBufferSize(r io.Reader, maxCapacity int) (chan string,
 	return out, nil
 }
 
+// ReadFile with filename
 func ReadFile(filename string) (chan string, error) {
 	if !FileExists(filename) {
 		return nil, errors.New("file doesn't exist")
@@ -164,6 +169,7 @@ func ReadFile(filename string) (chan string, error) {
 	return out, nil
 }
 
+// // ReadFile with filename and specific buffer size
 func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, error) {
 	if !FileExists(filename) {
 		return nil, errors.New("file doesn't exist")
@@ -187,6 +193,7 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	return out, nil
 }
 
+// GetTempFileName generate a temporary file name
 func GetTempFileName() (string, error) {
 	tmpfile, err := os.CreateTemp("", "")
 	if err != nil {
@@ -198,4 +205,29 @@ func GetTempFileName() (string, error) {
 	}
 	err = os.RemoveAll(tmpFileName)
 	return tmpFileName, err
+}
+
+// CopyFile from source to destination
+func CopyFile(src, dst string) error {
+	if !FileExists(src) {
+		return errors.New("source file doesn't exist")
+	}
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	return dstFile.Sync()
 }

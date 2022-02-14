@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
@@ -263,6 +264,32 @@ func UnmarshalFromReader(encodeType EncodeType, r io.Reader, obj interface{}) er
 		return yaml.NewDecoder(r).Decode(obj)
 	case JSON:
 		return json.NewDecoder(r).Decode(obj)
+	default:
+		return errors.New("unsopported encode type")
+	}
+}
+
+func Marshal(encodeType EncodeType, data []byte, obj interface{}) error {
+	isFilePath, _ := govalidator.IsFilePath(string(data))
+	switch {
+	case isFilePath:
+		dataFile, err := os.Create(string(data))
+		if err != nil {
+			return err
+		}
+		defer dataFile.Close()
+		return MarshalToWriter(encodeType, dataFile, obj)
+	default:
+		return MarshalToWriter(encodeType, bytes.NewBuffer(data), obj)
+	}
+}
+
+func MarshalToWriter(encodeType EncodeType, r io.Writer, obj interface{}) error {
+	switch encodeType {
+	case YAML:
+		return yaml.NewEncoder(r).Encode(obj)
+	case JSON:
+		return json.NewEncoder(r).Encode(obj)
 	default:
 		return errors.New("unsopported encode type")
 	}

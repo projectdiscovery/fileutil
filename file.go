@@ -2,12 +2,17 @@ package fileutil
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/tls"
-	"errors"
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/asaskevich/govalidator"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
 	"github.com/karrick/godirwalk"
 )
@@ -230,4 +235,62 @@ func CopyFile(src, dst string) error {
 	}
 
 	return dstFile.Sync()
+}
+
+type EncodeType uint8
+
+const (
+	YAML EncodeType = iota
+	JSON
+)
+
+func Unmarshal(encodeType EncodeType, data []byte, obj interface{}) error {
+	switch {
+	case FileExists(string(data)):
+		dataFile, err := os.Open(string(data))
+		if err != nil {
+			return err
+		}
+		defer dataFile.Close()
+		return UnmarshalFromReader(encodeType, dataFile, obj)
+	default:
+		return UnmarshalFromReader(encodeType, bytes.NewReader(data), obj)
+	}
+}
+
+func UnmarshalFromReader(encodeType EncodeType, r io.Reader, obj interface{}) error {
+	switch encodeType {
+	case YAML:
+		return yaml.NewDecoder(r).Decode(obj)
+	case JSON:
+		return json.NewDecoder(r).Decode(obj)
+	default:
+		return errors.New("unsopported encode type")
+	}
+}
+
+func Marshal(encodeType EncodeType, data []byte, obj interface{}) error {
+	isFilePath, _ := govalidator.IsFilePath(string(data))
+	switch {
+	case isFilePath:
+		dataFile, err := os.Create(string(data))
+		if err != nil {
+			return err
+		}
+		defer dataFile.Close()
+		return MarshalToWriter(encodeType, dataFile, obj)
+	default:
+		return MarshalToWriter(encodeType, bytes.NewBuffer(data), obj)
+	}
+}
+
+func MarshalToWriter(encodeType EncodeType, r io.Writer, obj interface{}) error {
+	switch encodeType {
+	case YAML:
+		return yaml.NewEncoder(r).Encode(obj)
+	case JSON:
+		return json.NewEncoder(r).Encode(obj)
+	default:
+		return errors.New("unsopported encode type")
+	}
 }

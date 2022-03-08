@@ -8,10 +8,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/stringsutil"
 	"gopkg.in/yaml.v3"
 
 	"github.com/karrick/godirwalk"
@@ -293,4 +295,13 @@ func MarshalToWriter(encodeType EncodeType, r io.Writer, obj interface{}) error 
 	default:
 		return errors.New("unsopported encode type")
 	}
+}
+
+func ExecutableName() string {
+	executablePath, err := os.Executable()
+	if err == nil {
+		executablePath = os.Args[0]
+	}
+	executableNameWithExt := filepath.Base(executablePath)
+	return stringsutil.TrimSuffixAny(executableNameWithExt, filepath.Ext(executableNameWithExt))
 }

@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -41,7 +43,16 @@ func FolderExists(foldername string) bool {
 	return info.IsDir()
 }
 
-func DeleteFilesOlderThan(folder string, maxAge time.Duration, callback func(string)) error {
+type FileFilters struct {
+	OlderThan    time.Duration
+	Prefix       string
+	Suffix       string
+	RegexPattern string
+	CustomCheck  func(filename string) bool
+	Callback     func(filename string) error
+}
+
+func DeleteFilesOlderThan(folder string, filter FileFilters) error {
 	startScan := time.Now()
 	return godirwalk.Walk(folder, &godirwalk.Options{
 		Unsorted:            true,
@@ -57,10 +68,30 @@ func DeleteFilesOlderThan(folder string, maxAge time.Duration, callback func(str
 			if err != nil {
 				return nil
 			}
-			if fileInfo.ModTime().Add(maxAge).Before(startScan) {
-				os.RemoveAll(osPathname)
-				if callback != nil {
-					callback(osPathname)
+			fileName := fileInfo.Name()
+			if filter.Prefix != "" && !strings.HasPrefix(fileName, filter.Prefix) {
+				return nil
+			}
+			if filter.Suffix != "" && !strings.HasSuffix(fileName, filter.Suffix) {
+				return nil
+			}
+			if filter.RegexPattern != "" {
+				regex, err := regexp.Compile(filter.RegexPattern)
+				if err != nil {
+					return err
+				}
+				if !regex.MatchString(fileName) {
+					return nil
+				}
+			}
+			if filter.CustomCheck != nil && !filter.CustomCheck(osPathname) {
+				return nil
+			}
+			if fileInfo.ModTime().Add(filter.OlderThan).Before(startScan) {
+				if filter.Callback != nil {
+					return filter.Callback(osPathname)
+				} else {
+					os.RemoveAll(osPathname)
 				}
 			}
 			return nil

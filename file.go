@@ -325,3 +325,14 @@ func MarshalToWriter(encodeType EncodeType, r io.Writer, obj interface{}) error 
 		return errors.New("unsopported encode type")
 	}
 }
+
+// RemoveAll specified paths, returning those that caused error
+func RemoveAll(paths ...string) (errored map[string]error) {
+	errored = make(map[string]error)
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			errored[path] = err
+		}
+	}
+	return
+}

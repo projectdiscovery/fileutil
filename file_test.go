@@ -38,31 +38,122 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 	// create a temporary folder with a couple of files
 	fo, err := os.MkdirTemp("", "")
 	require.Nil(t, err, "couldn't create folder: %s", err)
+	ttl := time.Duration(5 * time.Second)
 
 	// defer temporary folder removal
 	defer os.RemoveAll(fo)
+	checkFolderErr := func(err error) {
+		require.Nil(t, err, "couldn't create folder: %s", err)
+	}
+	checkFiles := func(fileName string) {
+		require.False(t, FileExists(fileName), "file \"%s\" still exists", fileName)
+	}
+	createFile := func() string {
+		fi, err := os.CreateTemp(fo, "")
+		require.Nil(t, err, "couldn't create f: %s", err)
+		fName := fi.Name()
+		fi.Close()
+		return fName
+	}
+	t.Run("prefix props test", func(t *testing.T) {
+		fName := createFile()
+		fileInfo, _ := os.Stat(fName)
+		// sleep for 5 seconds
+		time.Sleep(5 * time.Second)
+		// delete files older than 5 seconds
+		filter := FileFilters{
+			OlderThan: ttl,
+			Prefix:    fileInfo.Name(),
+		}
+		err = DeleteFilesOlderThan(fo, filter)
+		checkFolderErr(err)
+		checkFiles(fName)
+	})
+	t.Run("suffix props test", func(t *testing.T) {
+		fName := createFile()
+		fileInfo, _ := os.Stat(fName)
+		// sleep for 5 seconds
+		time.Sleep(5 * time.Second)
+		// delete files older than 5 seconds
+		filter := FileFilters{
+			OlderThan: ttl,
+			Suffix:    string(fileInfo.Name()[len(fileInfo.Name())-1]),
+		}
+		err = DeleteFilesOlderThan(fo, filter)
+		checkFolderErr(err)
+		checkFiles(fName)
+	})
+	t.Run("regex pattern props test", func(t *testing.T) {
+		fName := createFile()
+		fName1 := createFile()
 
-	fi, err := os.CreateTemp(fo, "")
-	require.Nil(t, err, "couldn't create folder: %s", err)
-	fiName1 := fi.Name()
-	fi.Close()
-	fi, err = os.CreateTemp(fo, "")
-	require.Nil(t, err, "couldn't create folder: %s", err)
-	fiName2 := fi.Name()
-	fi.Close()
+		// sleep for 5 seconds
+		time.Sleep(5 * time.Second)
+		// delete files older than 5 seconds
+		filter := FileFilters{
+			OlderThan:    ttl,
+			RegexPattern: "[0-9]",
+		}
+		err = DeleteFilesOlderThan(fo, filter)
+		checkFolderErr(err)
+		checkFiles(fName)
+		checkFiles(fName1)
+	})
+	t.Run("custom check props test", func(t *testing.T) {
+		fName := createFile()
+		fName1 := createFile()
 
-	ttl := time.Duration(5 * time.Second)
+		// sleep for 5 seconds
+		time.Sleep(5 * time.Second)
+		// delete files older than 5 seconds
+		filter := FileFilters{
+			OlderThan: ttl,
+			CustomCheck: func(filename string) bool {
+				return true
+			},
+		}
+		err = DeleteFilesOlderThan(fo, filter)
+		checkFolderErr(err)
+		checkFiles(fName)
+		checkFiles(fName1)
+	})
+	t.Run("custom check props negative test", func(t *testing.T) {
+		fName := createFile()
+		// sleep for 5 seconds
+		time.Sleep(5 * time.Second)
+		// delete files older than 5 seconds
+		filter := FileFilters{
+			OlderThan: ttl,
+			CustomCheck: func(filename string) bool {
+				return false // should not delete the file
+			},
+		}
+		err = DeleteFilesOlderThan(fo, filter)
+		checkFolderErr(err)
+		require.True(t, FileExists(fName), "file \"%s\" should exists", fName)
+	})
+	t.Run("callback props test", func(t *testing.T) {
+		fName := createFile()
+		fName1 := createFile()
 
-	// sleep for 5 seconds
-	time.Sleep(5 * time.Second)
-
-	// delete files older than 5 seconds
-	err = DeleteFilesOlderThan(fo, ttl, nil)
-	require.Nil(t, err, "couldn't create folder: %s", err)
-
-	// check that the files don't exist anymore
-	require.False(t, FileExists(fiName1), "file \"%s\" still exists", fiName1)
-	require.False(t, FileExists(fiName2), "file \"%s\" still exists", fiName2)
+		// sleep for 5 seconds
+		time.Sleep(5 * time.Second)
+		// delete files older than 5 seconds
+		filter := FileFilters{
+			OlderThan: ttl,
+			CustomCheck: func(filename string) bool {
+				return true
+			},
+			Callback: func(filename string) error {
+				t.Log("deleting file manually")
+				return os.Remove(filename)
+			},
+		}
+		err = DeleteFilesOlderThan(fo, filter)
+		checkFolderErr(err)
+		checkFiles(fName)
+		checkFiles(fName1)
+	})
 }
 
 func TestDownloadFile(t *testing.T) {

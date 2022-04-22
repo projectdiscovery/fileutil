@@ -336,3 +336,14 @@ func ExecutableName() string {
 	executableNameWithExt := filepath.Base(executablePath)
 	return stringsutil.TrimSuffixAny(executableNameWithExt, filepath.Ext(executableNameWithExt))
 }
+
+// RemoveAll specified paths, returning those that caused error
+func RemoveAll(paths ...string) (errored map[string]error) {
+	errored = make(map[string]error)
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			errored[path] = err
+		}
+	}
+	return
+}

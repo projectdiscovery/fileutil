@@ -3,6 +3,7 @@ package fileutil
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -251,5 +252,17 @@ func TestReadFileWithBufferSize(t *testing.T) {
 	for line := range c {
 		require.Equal(t, fileContentLines[i], line, "lines don't match")
 		i++
+	}
+}
+
+func TestUseMusl(t *testing.T) {
+	executablePath, err := os.Executable()
+	require.Nil(t, err)
+	_, err = UseMusl(executablePath)
+	switch runtime.GOOS {
+	case "windows", "darwin":
+		require.NotNil(t, err)
+	case "linux":
+		require.Nil(t, err)
 	}
 }

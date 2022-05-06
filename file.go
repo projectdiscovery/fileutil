@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"debug/elf"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -346,4 +347,27 @@ func RemoveAll(paths ...string) (errored map[string]error) {
 		}
 	}
 	return
+}
+
+// UseMusl checks if the specified elf file uses musl
+func UseMusl(path string) (bool, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+	elfFile, err := elf.NewFile(file)
+	if err != nil {
+		return false, err
+	}
+	importedLibraries, err := elfFile.ImportedLibraries()
+	if err != nil {
+		return false, err
+	}
+	for _, importedLibrary := range importedLibraries {
+		if stringsutil.ContainsAny(importedLibrary, "libc.musl-") {
+			return true, nil
+		}
+	}
+	return false, nil
 }

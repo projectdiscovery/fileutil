@@ -218,7 +218,7 @@ func TestReadFile(t *testing.T) {
 	f, err := os.CreateTemp("", "")
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
-	f.Write([]byte(fileContent))
+	_, _ = f.Write([]byte(fileContent))
 	f.Close()
 	defer os.Remove(fname)
 
@@ -240,7 +240,7 @@ func TestReadFileWithBufferSize(t *testing.T) {
 	f, err := os.CreateTemp("", "")
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
-	f.Write([]byte(fileContent))
+	_, _ = f.Write([]byte(fileContent))
 	f.Close()
 	defer os.Remove(fname)
 

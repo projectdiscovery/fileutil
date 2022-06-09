@@ -255,6 +255,21 @@ func TestReadFileWithBufferSize(t *testing.T) {
 	}
 }
 
+func TestPermissions(t *testing.T) {
+	f, err := os.CreateTemp("", "")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	f.Close()
+	defer os.Remove(fname)
+
+	ok, err := IsReadable(fname)
+	require.True(t, ok)
+	require.Nil(t, err)
+	ok, err = IsWriteable(fname)
+	require.True(t, ok)
+	require.Nil(t, err)
+}
+
 func TestUseMusl(t *testing.T) {
 	executablePath, err := os.Executable()
 	require.Nil(t, err)

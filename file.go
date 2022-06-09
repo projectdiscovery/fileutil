@@ -367,3 +367,27 @@ func UseMusl(path string) (bool, error) {
 	}
 	return false, nil
 }
+
+// IsReadable verify file readability
+func IsReadable(fileName string) (bool, error) {
+	return HasPermission(fileName, os.O_RDONLY)
+}
+
+// IsWriteable verify file writeability
+func IsWriteable(fileName string) (bool, error) {
+	return HasPermission(fileName, os.O_WRONLY)
+}
+
+// HasPermission checks if the file has the requested permission
+func HasPermission(fileName string, permission int) (bool, error) {
+	file, err := os.OpenFile(fileName, permission, 0666)
+	if err != nil {
+		if os.IsPermission(err) {
+			return false, errors.Wrap(err, "permission error")
+		}
+		return false, err
+	}
+	file.Close()
+
+	return true, nil
+}

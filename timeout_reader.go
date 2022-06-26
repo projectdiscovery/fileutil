@@ -8,6 +8,7 @@ import (
 
 var TimeoutError = errors.New("Timeout")
 
+// TimeoutReader is a reader wrapper that stops waiting after Timeout
 type TimeoutReader struct {
 	Timeout     time.Duration
 	Reader      io.Reader
@@ -15,6 +16,7 @@ type TimeoutReader struct {
 	datachan    chan struct{}
 }
 
+// Read into the buffer
 func (reader TimeoutReader) Read(p []byte) (n int, err error) {
 	if reader.datachan == nil {
 		reader.datachan = make(chan struct{})

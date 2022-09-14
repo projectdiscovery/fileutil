@@ -1,6 +1,8 @@
 package fileutil
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -280,4 +282,134 @@ func TestUseMusl(t *testing.T) {
 	case "linux":
 		require.Nil(t, err)
 	}
+}
+
+func TestReadFileWithReader(t *testing.T) {
+	fileContent := `test
+	test1
+	test2`
+	f, err := os.CreateTemp("", "output")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	fileContentLines := strings.Split(fileContent, "\n")
+	f, err = os.Open(fname)
+	require.Nil(t, err, "couldn't create file: %s", err)
+	// compare file lines
+	c, _ := ReadFileWithReader(f)
+	i := 0
+	for line := range c {
+		require.Equal(t, fileContentLines[i], line, "lines don't match")
+		i++
+	}
+	f.Close()
+}
+
+func TestReadFileWithReaderAndBufferSize(t *testing.T) {
+	fileContent := `test
+	test1
+	test2`
+	f, err := os.CreateTemp("", "")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	fileContentLines := strings.Split(fileContent, "\n")
+	f, err = os.Open(fname)
+	require.Nil(t, err, "couldn't create file: %s", err)
+	// compare file lines
+	c, _ := ReadFileWithReaderAndBufferSize(f, 64*1024)
+	i := 0
+	for line := range c {
+		require.Equal(t, fileContentLines[i], line, "lines don't match")
+		i++
+	}
+	f.Close()
+}
+
+func TestCopyFile(t *testing.T) {
+	fileContent := `test
+	test1
+	test2`
+	f, err := os.CreateTemp("", "")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	fnameCopy := fmt.Sprintf("%s-copy", f.Name())
+	err = CopyFile(fname, fnameCopy)
+	require.Nil(t, err, "couldn't copy file: %s", err)
+	require.True(t, FileExists(fnameCopy), "file \"%s\" doesn't exists", fnameCopy)
+	os.Remove(fnameCopy)
+}
+
+func TestGetTempFileName(t *testing.T) {
+	fname, _ := GetTempFileName()
+	defer os.Remove(fname)
+	require.NotEmpty(t, fname)
+}
+
+func TestUnmarshal(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name"`
+	}
+	var ts TestStruct
+	err := Unmarshal(JSON, []byte(`{"name":"test"}`), &ts)
+	require.Nil(t, err)
+	require.Equal(t, "test", ts.Name)
+}
+
+func TestMarshal(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name"`
+	}
+	ts := TestStruct{Name: "test"}
+	fs, err := GetTempFileName()
+	require.Nil(t, err)
+	defer RemoveAll(fs)
+	err = Marshal(JSON, []byte(fs), ts)
+	require.Nil(t, err)
+	data, err := os.ReadFile(fs)
+	require.Nil(t, err)
+	require.Equal(t, `{"name":"test"}`, strings.TrimSpace(string(data)))
+}
+
+func TestUnmarshalFromReader(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name"`
+	}
+	var ts TestStruct
+	err := UnmarshalFromReader(JSON, strings.NewReader(`{"name":"test"}`), &ts)
+	require.Nil(t, err)
+	require.Equal(t, "test", ts.Name)
+}
+
+func TestMarshalToWriter(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name"`
+	}
+	ts := TestStruct{Name: "test"}
+	var data []byte
+	buf := bytes.NewBuffer(data)
+	err := MarshalToWriter(JSON, buf, ts)
+	require.Nil(t, err)
+	require.Equal(t, `{"name":"test"}`, strings.TrimSpace(buf.String()))
+}
+
+func TestExecutableName(t *testing.T) {
+	require.NotEmpty(t, ExecutableName())
+}
+
+func TestRemoveAll(t *testing.T) {
+	tmpdir, err := os.MkdirTemp("", "")
+	require.Nil(t, err, "couldn't create folder: %s", err)
+	f, err := os.CreateTemp(tmpdir, "")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	f.Close()
+	errs := RemoveAll(tmpdir)
+	require.Equal(t, 0, len(errs), "couldn't remove folder: %s", errs)
 }
